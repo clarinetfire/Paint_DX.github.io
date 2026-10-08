@@ -1,0 +1,14 @@
+[package]
+name = "paint-app"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+paint-core = { path = "../paint-core" }
+eframe.workspace = true
+egui.workspace = true
+rfd.workspace = true
+arboard.workspace = true
+anyhow.workspace = true
