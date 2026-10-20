@@ -4,6 +4,10 @@
 
 ![Paint DX Icon](crates/paint-app/assets/app.png)
 
+### 🌐 Version Web / WebAssembly
+Vous pouvez utiliser **Paint DX** directement dans votre navigateur Web :
+👉 **[Lancer Paint DX en ligne](https://clarinetfire.github.io/Paint_DX.github.io/)**
+
 ## Features
 
 - **Pixel-Perfect XP Toolset**: All 16 classic tools (Pencil, Brush with 12 tips, Airbrush, Line, Curve, Rectangle, Polygon, Ellipse, Rounded Rectangle, Fill, Color Picker, Magnifier, Eraser/Color Eraser, Text, Rectangular & Freeform Selection).
