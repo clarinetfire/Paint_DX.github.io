@@ -1,6 +1,6 @@
 # Windows XP Paint (mspaint 5.1) Specification Baseline
 
-Reference documentation for the classic behavior to reproduce in Paint-RS / Paint DX.
+Reference documentation for the classic behavior to reproduce in Paint DX.
 
 ## 1. Window and Layout
 - Single document window: no tabs, no MDI.
@@ -56,7 +56,7 @@ Left button draws with the foreground color, right button with the background co
 - PNG (saved without alpha channel, so no transparency).
 
 ## 6. Edit Menu
-- Undo and Redo, limited to 3 levels in XP (extended in Paint-RS).
+- Undo and Redo, limited to 3 levels in XP (extended in Paint DX).
 - Repeat (F4).
 - Cut, Copy, Paste.
 - Clear Selection (Del), Select All.

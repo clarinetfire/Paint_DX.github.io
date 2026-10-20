@@ -1,0 +1,135 @@
+name: CI & Release
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-and-test:
+    name: Check, Lint & Test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Code Formatting Check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy Linter Check
+        run: cargo clippy --workspace -- -D warnings
+
+      - name: WebAssembly Target Check
+        run: cargo check -p paint-app --target wasm32-unknown-unknown
+
+      - name: Run Workspace Tests
+        run: cargo test --workspace --verbose
+
+  build-release:
+    name: Build & Package Windows Release
+    needs: check-and-test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Release Binary
+        run: cargo build --release -p paint-app
+
+      - name: Package Windows Artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "package/PaintDX/assets" | Out-Null
+          if (Test-Path "target/release/paint-dx.exe") {
+            Copy-Item "target/release/paint-dx.exe" "package/PaintDX/"
+          } elseif (Test-Path "target/release/paint-app.exe") {
+            Copy-Item "target/release/paint-app.exe" "package/PaintDX/"
+          }
+          Copy-Item "crates/paint-app/assets/app.ico" "package/PaintDX/assets/"
+          Copy-Item "crates/paint-app/assets/app.png" "package/PaintDX/assets/"
+          Copy-Item "README.md" "package/PaintDX/"
+          Copy-Item "installer/install.ps1" "package/PaintDX/"
+          Copy-Item "installer/uninstall.ps1" "package/PaintDX/"
+          Compress-Archive -Path "package/PaintDX/*" -DestinationPath "paint-dx-windows-x86_64.zip" -Force
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: paint-dx-windows-x86_64
+          path: paint-dx-windows-x86_64.zip
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: paint-dx-windows-x86_64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-web:
+    name: Build & Deploy WebAssembly (HTML / Web)
+    needs: check-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Download Trunk binary
+        run: |
+          wget -qO- https://github.com/thedodd/trunk/releases/latest/download/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf- -C /usr/local/bin
+          chmod +x /usr/local/bin/trunk
+
+      - name: Build Web Application
+        working-directory: crates/paint-app
+        run: trunk build --public-url "./" --release
+
+      - name: Package Web Artifacts
+        run: |
+          zip -r paint-dx-web.zip dist/
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: paint-dx-web
+          path: paint-dx-web.zip
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages

@@ -1,5 +1,7 @@
 # Rust build artifacts
 /target/
+/Paint_DX.exe
+/Paint DX.exe
 **/*.rs.bk
 Cargo.lock.temp
 
@@ -21,3 +23,7 @@ Desktop.ini
 # Test output artifacts
 tests/output/
 scratch/
+/export/
+/dist/
+*.paintproj
+scripts/
